@@ -1,35 +1,77 @@
-let container = document.querySelector('.container');
-const form = document.querySelector('#form');
-form.addEventListener('submit' , e => {
-    e.preventDefault();
-    document.querySelector('.container').style.visibility = "visible";
-    let searchName = document.querySelector('#search').value;
-    let name = searchName.split(' ').join('');
-    fetch('https://api.github.com/users/'+name)
+const APIURL = "https://api.github.com/users/";
+let main = document.querySelector(".container");
+let form = document.getElementById("form");
+let search = document.getElementById("search");
+function getUser(username) {
+  let name = username.split(" ").join("");
+  fetch(APIURL + name)
     .then((response) => response.json())
     .then((data) => {
-    console.log(data);
-    if(data.message == "Not Found"){
-        console.log('Not Found')
-    }
-    if(searchName == ""){
-        alert('Please enter user name')
-    }
-    document.querySelector('#search').value = '';
-    let userDetails;
-    const icon = (data.avatar_url);
-    userDetails = `
-    <div class="all-items">
-    <img src="${icon}" class="avatar">
-    <h1 class="username">${data.login}</h1>
-    <div class="list">
-    <a href="${data.html_url}" target="_blank"><l1> ${data.followers} Followers</li></a>
-    <a href="${data.html_url}" target="_blank"><l1> ${data.following} Following</li></a>
-    <a href="#" target="_blank"><l1> ${data.public_repos} Repos</li></a>
-    <a href="${data.html_url}" target="_blank"><l1>View Repository</li></a>
-    </div>
-    </div>
-    `
-    container.innerHTML = userDetails;
-   })
+      createUserCard(data);
+      getRepos(username);
+      //   if(name == undefined) {
+      //     createErrorCard("Not Found")
+      //   }
+    });
+}
+function getRepos(username) {
+  let name = username.split(" ").join("");
+  fetch(APIURL + name + "/repos?sort=created")
+    .then((res) => res.json())
+    .then((data) => {
+      addReposToCard(data);
+    });
+}
+function createUserCard(user) {
+  const userID = user.name || user.login;
+  const userBio = user.bio ? `<p>${user.bio}</p>` : "";
+  const cardHTML = `
+<div class="card">
+<div>
+<a href=${"https://github.com/" + user.login}>
+<img src="${user.avatar_url}" alt="${user.name}" class="avatar">
+</a>
+</div>
+<div class="user-info">
+<a href=${"https://github.com/" + user.login}>
+<h2>${userID}</h2>
+</a>
+${userBio}
+<ul class="user-details">
+<li>${user.followers} <strong>Followers</strong></li>
+<li>${user.following} <strong>Following</strong></li>
+<li>${user.public_repos} <strong>Repos</strong></li>
+</ul>
+<div id="repos"></div>
+</div>
+</div>
+`;
+  main.innerHTML = cardHTML;
+}
+// function createErrorCard(msg) {
+//   const errCardHTML = `
+// <div class="card">
+// <h1>${msg}</h1>
+// </div>
+// `;
+//   main.innerHTML = errCardHTML;
+// }
+function addReposToCard(repos) {
+  const reposEl = document.getElementById("repos");
+  repos.slice(0, 5).forEach((repo) => {
+    const repoEl = document.createElement("a");
+    repoEl.classList.add("repo");
+    repoEl.href = repo.html_url;
+    repoEl.target = "_blank";
+    repoEl.innerText = repo.name;
+    reposEl.appendChild(repoEl);
+  });
+}
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const user = search.value;
+  if (user) {
+    getUser(user);
+    search.value = "";
+  }
 });
